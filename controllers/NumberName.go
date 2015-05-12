@@ -15,7 +15,7 @@ import (
 	// "os/exec"
 	"path/filepath"
 	// "regexp"
-	"fmt"
+	// "fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -67,12 +67,12 @@ func (this NumberNameList) SplitByH1() NumberNameGroupList {
 }
 
 func (this NumberNameList) Print() {
-	DebugTraceF(G_DebugLine, GetFileLocation())
-	DebugTraceF("列表：", GetFileLocation())
+	DebugTraceF(G_DebugLine)
+	DebugTraceF("列表：")
 	for _, nn := range this {
-		DebugTraceF("Name: %10s		H1: %3d		H2: %3d", nn.Name, nn.H1, nn.H2, GetFileLocation())
+		DebugTraceF("Name: %10s		H1: %3d		H2: %3d", nn.Name, nn.H1, nn.H2)
 	}
-	DebugTraceF(G_DebugLine, GetFileLocation())
+	DebugTraceF(G_DebugLine)
 }
 func (this NumberNameList) ToNameList() []string {
 	// sort.Sort(this)
@@ -87,8 +87,8 @@ func (this NumberNameList) Sort() {
 	sort.Sort(this)
 }
 func (this NumberNameList) Add(name string) NumberNameList {
-	// DebugTraceF(G_DebugLine, GetFileLocation())
-	// DebugTraceF("添加名称到列表：%s", name, GetFileLocation())
+	// DebugTraceF(G_DebugLine)
+	// DebugTraceF("添加名称到列表：%s", name)
 	nameWithoutExt := strings.TrimRight(name, filepath.Ext(name))
 	if nameWithoutExt == "README" {
 		this = append(this, NewNumberName(name, 0, 0))
@@ -115,58 +115,7 @@ func (this NumberNameList) Add(name string) NumberNameList {
 		}
 	}
 
-	// DebugTraceF("现在有 %d 个元素", len(this), GetFileLocation())
-	// DebugTraceF(G_DebugLine, GetFileLocation())
-	return this
-}
-
-type NumberNameGroup struct {
-	H1    int
-	Names []string
-}
-
-func NewNumberNameGroup(h1 int, name string) *NumberNameGroup {
-	return &NumberNameGroup{
-		H1:    h1,
-		Names: []string{name},
-	}
-}
-func (this *NumberNameGroup) Print() {
-	DebugTrace(fmt.Sprintf("标题: %3d    文件列表: %v", this.H1, this.Names) + GetFileLocation())
-}
-func (this *NumberNameGroup) AddName(name string) {
-	for _, s := range this.Names {
-		if s == name {
-			return
-		}
-	}
-	this.Names = append(this.Names, name)
-}
-
-type NumberNameGroupList []*NumberNameGroup
-
-func (this NumberNameGroupList) Print() {
-	DebugTrace(G_DebugLine)
-	for _, nng := range this {
-		nng.Print()
-	}
-	DebugTrace(G_DebugLine)
-}
-
-func (this NumberNameGroupList) Find(h1 int) *NumberNameGroup {
-	for _, nng := range this {
-		if nng.H1 == h1 {
-			return nng
-		}
-	}
-	return nil
-}
-func (this NumberNameGroupList) AddNumberName(nn *NumberName) NumberNameGroupList {
-	nng := this.Find(nn.H1)
-	if nng == nil {
-		this = append(this, NewNumberNameGroup(nn.H1, nn.Name))
-	} else {
-		nng.AddName(nn.Name)
-	}
+	// DebugTraceF("现在有 %d 个元素", len(this))
+	// DebugTraceF(G_DebugLine)
 	return this
 }

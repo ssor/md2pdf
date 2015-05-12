@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	// "sort"
+	// "errors"
 	"strconv"
 	"strings"
 )
@@ -31,6 +32,8 @@ var (
 
 func init() {
 	initConfig()
+	DebugInfoF("输入PDF文件名为：%s", G_pdfFileName)
+
 	go initCli()
 }
 
@@ -48,15 +51,12 @@ func initCli() {
 			Description: "注意文件排列顺序",
 			Action: func(c *cli.Context) {
 				dir := G_dirDest + c.Args().First()
-				DebugInfoF("html目录为 %s", dir, GetFileLocation())
+				DebugInfoF("html目录为 %s", dir)
 				list, err := GetFileNameList(dir, htmlExt)
 				if err != nil {
-					DebugSysF("获取文件列表失败：%s", err.Error(), GetFileLocation())
+					DebugSysF("获取文件列表失败：%s", err.Error())
 				} else {
-					DebugInfoF("文件列表 (%d)：", len(list), GetFileLocation())
-					// for _, name := range list {
-					// 	DebugTraceF(name, GetFileLocation())
-					// }
+					DebugInfoF("文件列表 (%d)：", len(list))
 					list.Print()
 				}
 			},
@@ -66,15 +66,12 @@ func initCli() {
 			Usage:       "将MD文件转换成html文档",
 			Description: "生成的文档目录结构与原文件目录一致，生成的文档将会放置到对应的相同目录，图片文件直接复制到对应目录",
 			Action: func(c *cli.Context) {
-				DebugInfoF("MD目录为 %s", G_dirSrc, GetFileLocation())
+				DebugInfoF("MD目录为 %s", G_dirSrc)
 				list, err := GetFileNameList(G_dirSrc, mdExt)
 				if err != nil {
-					DebugSysF("获取文件列表失败：%s", err.Error(), GetFileLocation())
+					DebugSysF("获取文件列表失败：%s", err.Error())
 				} else {
-					DebugInfoF("文件列表 (%d)：", len(list), GetFileLocation())
-					// for _, name := range list {
-					// 	DebugTraceF(name, GetFileLocation())
-					// }
+					DebugInfoF("文件列表 (%d)：", len(list))
 					list.Print()
 				}
 				grouplist := list.SplitByH1()
@@ -84,7 +81,7 @@ func initCli() {
 					return
 				}
 				if err := ConvertMdFilesToHtml(grouplist, G_dirSrc, G_dirDest); err != nil {
-					DebugSysF(err.Error(), GetFileLocation())
+					DebugSysF(err.Error())
 				}
 			},
 		}, {
@@ -93,17 +90,26 @@ func initCli() {
 			Usage:       "输出pdf文件",
 			Description: "将之前的html列表转换成一个PDF文档输出",
 			Action: func(c *cli.Context) {
-				DebugInfoF("html目录为 %s", G_dirDest, GetFileLocation())
+				DebugInfoF("html目录为 %s", G_dirDest)
 				list, err := GetFileNameList(G_dirDest, htmlExt)
 				if err != nil {
-					DebugSysF("获取文件列表失败：%s", err.Error(), GetFileLocation())
+					DebugSysF("获取文件列表失败：%s", err.Error())
 				} else {
-					DebugInfoF("文件列表 (%d)：", len(list), GetFileLocation())
-					// for _, name := range list {
-					// 	DebugTraceF(name, GetFileLocation())
-					// }
+					DebugInfoF("文件列表 (%d)：", len(list))
 					list.Print()
 					OutputPDF(G_pdfFileName, G_dirDest, list.ToNameList())
+				}
+			},
+		}, {
+			Name:        "clearOutputDir",
+			ShortName:   "clear",
+			Usage:       "清空生成html文件的目录",
+			Description: "默认目录为：" + G_dirDest,
+			Action: func(c *cli.Context) {
+				if err := os.RemoveAll(G_dirDest); err == nil {
+					DebugInfoF("目录 %s 清空完毕", G_dirDest)
+				} else {
+					DebugMustF("清空目录 %s 时出错：%s", err.Error())
 				}
 			},
 		},
@@ -168,15 +174,15 @@ func OutputPDF(pdfName, htmlDirPath string, htmlNameList []string) {
 	}
 	htmlPathList = append(htmlPathList, pdfName)
 
-	DebugInfoF("开始转换 ...", GetFileLocation())
+	DebugInfoF("开始转换 ...")
 	cmd := exec.Command("wkhtmltopdf", htmlPathList...)
 	err := cmd.Run()
 	if err != nil {
 		// log.Fatal(err)
-		DebugMust("转换PDF出错：" + err.Error() + GetFileLocation())
+		DebugMust("转换PDF出错：" + err.Error())
 		return
 	} else {
-		DebugInfoF("转换完成", GetFileLocation())
+		DebugInfoF("转换完成")
 	}
 }
 
@@ -201,8 +207,6 @@ func GetFileNameList(dir, ext string) (NumberNameList, error) {
 	if err := filepath.Walk(dir, walkFn); err != nil {
 		return nil, err
 	}
-	// list.Print()
-	// return list.ToNameList(), nil
 	return list, nil
 }
 
@@ -218,12 +222,12 @@ func PrepareHtmlFileDir(mdFileDir, outputPath string) error {
 		}
 		if info.IsDir() == true { //在应用目录内查看是否已创建该目录
 			dirPath := strings.Replace(fullPath, mdFileDir, outputPath, 1)
-			DebugTrace(fmt.Sprintf("需要创建目录：%s", dirPath) + GetFileLocation())
+			DebugTraceF("需要创建目录：%s", dirPath)
 			if err := os.MkdirAll(dirPath, os.ModePerm); err != nil {
-				DebugMust(fmt.Sprintf("创建目录 %s 失败：%s", dirPath, err.Error()) + GetFileLocation())
+				DebugMustF("创建目录 %s 失败：%s", dirPath, err.Error())
 				return err
 			} else {
-				DebugInfo(fmt.Sprintf("创建目录 %s 成功", dirPath) + GetFileLocation())
+				DebugInfoF("创建目录 %s 成功", dirPath)
 			}
 		} else {
 			//如果文件为图片，则将文件拷贝到对应目录
@@ -232,7 +236,7 @@ func PrepareHtmlFileDir(mdFileDir, outputPath string) error {
 				if errCopy := CopyFile(destFilePath, fullPath); errCopy != nil {
 					return errCopy
 				}
-				DebugTrace(fmt.Sprintf("复制 %s 到 %s 成功", fullPath, destFilePath) + GetFileLocation())
+				DebugTraceF("复制 %s 到 %s 成功", fullPath, destFilePath)
 			}
 		}
 		return nil
@@ -255,41 +259,12 @@ func ConvertMdFilesToHtml(nameGroupList NumberNameGroupList, mdSrcPath, outputPa
 			return err
 		}
 	}
-	// walkFnFile := func(fullPath string, info os.FileInfo, err error) error {
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if matched, _ := regexp.MatchString(`\/\.\w+`, fullPath); matched == true {
-	// 		// DebugInfo(fullPath)
-	// 		return nil
-	// 	}
-	// 	if info.IsDir() == false { //在应用目录内查看是否已创建该目录
-	// 		//如果是md文件，将文件转换到应用对应目录内
-	// 		if (filepath.Ext(info.Name())) == ".md" {
-	// 			destFilePath := strings.Replace(fullPath, mdFileDir, outputPath, 1)
-	// 			destFilePath = strings.TrimRight(destFilePath, ".md") + ".html"
-	// 			DebugTrace(fmt.Sprintf("将 %s 转换为 %s ", fullPath, destFilePath) + GetFileLocation())
-	// 			if errConvert := ConvertMd2Html([]string{}, destFilePath); errConvert != nil {
-	// 				return errConvert
-	// 			}
-	// 		}
-	// 	}
-	// 	return nil
-	// }
-	// if err := filepath.Walk(mdFileDir, walkFnFile); err != nil {
-	// 	return err
-	// }
 	return nil
 }
 
 //转换一个md文件列表为html文件，放到指定目录中，即多个md文件合为一个html文件
 func ConvertMd2Html(mdFileFullPathlist []string, outputFileFullPath string) error {
-
-	// DebugTrace(fmt.Sprintf("转换文件列表 %v 到文件 %s", mdFileFullPathlist, outputFileFullPath))
-	// return nil
 	mdContent := []byte{}
-
-	// mdFileNamePath := ""
 
 	mdFileReader := func(mdFileNamePath string) ([]byte, error) {
 		var r io.ReadCloser
@@ -297,7 +272,7 @@ func ConvertMd2Html(mdFileFullPathlist []string, outputFileFullPath string) erro
 		if err != nil {
 			return nil, err
 		}
-		DebugTrace(fmt.Sprintf("找到文件 %s ", mdFileNamePath) + GetFileLocation())
+		DebugTraceF("找到文件 %s ", mdFileNamePath)
 
 		r = f
 		defer func() { r.Close() }()
@@ -305,7 +280,7 @@ func ConvertMd2Html(mdFileFullPathlist []string, outputFileFullPath string) erro
 		if err != nil {
 			return nil, err
 		}
-		DebugTrace(fmt.Sprintf("读取文件 %s 成功", mdFileNamePath) + GetFileLocation())
+		DebugTraceF("读取文件 %s 成功", mdFileNamePath)
 		return text, nil
 	}
 	for _, mdFile := range mdFileFullPathlist {
@@ -324,23 +299,21 @@ func ConvertMd2Html(mdFileFullPathlist []string, outputFileFullPath string) erro
 		mdContent = append(mdContent, content...)
 		mdContent = append(mdContent, []byte(strings.Repeat("\r\n", 10))...)
 	}
-	// newname := strings.TrimRight(mdFileNamePath, ".md") + ".html"
-	// newname = outputFileFullPath + newname
 	outfile, err := os.Create(outputFileFullPath)
 	if err != nil {
 		return err
 	}
-	DebugTrace(fmt.Sprintf("创建文件 %s 成功", outputFileFullPath) + GetFileLocation())
+	DebugTraceF("创建文件 %s 成功", outputFileFullPath)
 	defer outfile.Close()
 
 	md := md2min.New("none")
 	err = md.Parse(mdContent, outfile)
 	if err != nil {
 		DebugSysF("转换文件时出错：原因：%s", err.Error())
-		DebugSys(fmt.Sprintf("文件列表：%v", mdFileFullPathlist) + GetFileLocation())
+		DebugSysF("文件列表：%v", mdFileFullPathlist)
 		return err
 	}
-	// DebugInfo(fmt.Sprintf("文件 %s 转成 %s 成功", mdFileNamePath, outputPath) + GetFileLocation())
+	// DebugInfo(fmt.Sprintf("文件 %s 转成 %s 成功", mdFileNamePath, outputPath)
 	return nil
 }
 
