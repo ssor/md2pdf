@@ -52,12 +52,12 @@ var G_DebugLine = "-------------------------------------------------------------
 func DebugMust(log string) {
 	DebugOutput(log, 1)
 }
-
+func DebugMustF(format string, args ...interface{}) {
+	log := fmt.Sprintf(format+"%s", append(args, GetFileLocation())...)
+	DebugMust(log)
+}
 func DebugSysF(format string, args ...interface{}) {
-	log := fmt.Sprintf(format, args...)
-	if len(args) > 0 {
-		log = fmt.Sprintf(format+"%s", args...)
-	}
+	log := fmt.Sprintf(format+"%s", append(args, GetFileLocation())...)
 	DebugSys(log)
 }
 
@@ -67,10 +67,7 @@ func DebugSys(log string) {
 }
 
 func DebugInfoF(format string, args ...interface{}) {
-	log := fmt.Sprintf(format, args...)
-	if len(args) > 0 {
-		log = fmt.Sprintf(format+"%s", args...)
-	}
+	log := fmt.Sprintf(format+"%s", append(args, GetFileLocation())...)
 	DebugInfo(log)
 }
 
@@ -80,10 +77,7 @@ func DebugInfo(log string) {
 }
 
 func DebugTraceF(format string, args ...interface{}) {
-	log := fmt.Sprintf(format, args...)
-	if len(args) > 0 {
-		log = fmt.Sprintf(format+"%s", args...)
-	}
+	log := fmt.Sprintf(format+"%s", append(args, GetFileLocation())...)
 	DebugTrace(log)
 }
 
@@ -143,7 +137,7 @@ func DebugOutputBeego(log string, level int) {
 	}
 }
 func GetFileLocation() string {
-	_, file, line, ok := runtime.Caller(1)
+	_, file, line, ok := runtime.Caller(2)
 	if ok {
 		array := strings.Split(file, "/")
 		return fmt.Sprintf(" (%s %d)", array[len(array)-1], line)
